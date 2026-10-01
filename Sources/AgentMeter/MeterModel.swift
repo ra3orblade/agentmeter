@@ -48,7 +48,11 @@ final class MeterModel {
     dailyBudget = UserDefaults.standard.double(forKey: "dailyBudget")
     menuBarStyle = UserDefaults.standard.string(forKey: "menuBarStyle").flatMap(MenuBarStyle.init) ?? .gaugeAndCost
     do {
-      engine = try Engine()
+      // Overrides exist for tools/screenshots.sh, which renders a synthetic home, never yours.
+      let env = ProcessInfo.processInfo.environment
+      engine = try Engine(
+        home: env["AGENTMETER_HOME"].map { URL(fileURLWithPath: $0) } ?? FileManager.default.homeDirectoryForCurrentUser,
+        dir: env["AGENTMETER_DATA_DIR"].map { URL(fileURLWithPath: $0) } ?? Engine.supportDir)
     } catch {
       self.error = "Can't open the cache: \(error)"
     }

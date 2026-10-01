@@ -144,8 +144,8 @@ struct MenuView: View {
   }
 
   private var active: some View {
-    Section("Active now") {
-      ForEach(r.active) { s in
+    Section("Active now", trailing: r.active.count > 5 ? "\(r.active.count) sessions" : nil) {
+      ForEach(r.active.prefix(5)) { s in
         let project = s.project.isEmpty ? s.agent.label : (s.project as NSString).lastPathComponent
         Row {
           Circle().fill(s.agent.color).frame(width: 8, height: 8)
@@ -161,6 +161,11 @@ struct MenuView: View {
           Text(Fmt.usd(s.costToday)).frame(minWidth: 64, alignment: .trailing)
         }
         .help(s.project)
+      }
+      if r.active.count > 5 {
+        Text("+\(r.active.count - 5) more, \(Fmt.usd(r.active.dropFirst(5).reduce(0) { $0 + $1.costToday })) today")
+          .font(.caption).foregroundStyle(.secondary)
+          .padding(.leading, 16)
       }
     }
   }
@@ -189,7 +194,7 @@ struct MenuView: View {
       .chartYAxis {
         AxisMarks(values: .automatic(desiredCount: 3)) { v in
           AxisGridLine().foregroundStyle(.quaternary)
-          AxisValueLabel { if let n = v.as(Double.self) { Text(Fmt.compactUSD(n)) } }
+          AxisValueLabel { if let n = v.as(Double.self) { Text(Fmt.axisUSD(n)) } }
         }
       }
       .frame(height: 96)

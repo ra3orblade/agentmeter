@@ -79,9 +79,14 @@ private let isoFrac: ISO8601DateFormatter = {
 }()
 private let isoPlain = ISO8601DateFormatter()
 
+/// ISO 8601 with any number of fractional digits (the formatter itself only takes up to three).
 func parseDate(_ s: String?) -> Date? {
   guard let s else { return nil }
-  return isoFrac.date(from: s) ?? isoPlain.date(from: s)
+  if let d = isoFrac.date(from: s) ?? isoPlain.date(from: s) { return d }
+  guard let dot = s.firstIndex(of: "."), let end = s[dot...].firstIndex(where: { !$0.isNumber && $0 != "." })
+  else { return nil }
+  let digits = s[s.index(after: dot)..<end]
+  return isoFrac.date(from: s[..<dot] + "." + digits.prefix(3).padding(toLength: 3, withPad: "0", startingAt: 0) + s[end...])
 }
 
 /// Byte-level substring test, so the multi-megabyte lines that carry no usage are never decoded.
@@ -106,9 +111,11 @@ public protocol LineParser: Sendable {
 public struct ClaudeParser: LineParser {
   public let agent = Agent.claude
   public init() {}
-  private static let assistant = Array(#""type":"assistant""#.utf8)
-  private static let cwd = Array(#""cwd":""#.utf8)
-  private static let aiTitle = Array(#""type":"ai-title""#.utf8)
+  // Prefilters match the value alone, so `"type": "assistant"` (spaced JSON) still passes;
+  // a false positive only costs a full parse, the checks below decide.
+  private static let assistant = Array(#""assistant""#.utf8)
+  private static let cwd = Array(#""cwd""#.utf8)
+  private static let aiTitle = Array(#""ai-title""#.utf8)
 
   public func parse(line: Data, state: inout FileState) -> [Turn] {
     let isAssistant = contains(line, Self.assistant)

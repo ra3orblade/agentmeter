@@ -16,6 +16,12 @@ enum Fmt {
     }
   }
 
+  /// Axis ticks are round numbers: $0, $5, $250, $1k.
+  static func axisUSD(_ v: Double) -> String {
+    v >= 1000 ? String(format: v.truncatingRemainder(dividingBy: 1000) == 0 ? "$%.0fk" : "$%.1fk", v / 1000)
+      : v == v.rounded() ? String(format: "$%.0f", v) : String(format: "$%.2f", v)
+  }
+
   static func percent(_ v: Double) -> String {
     v < 0.01 ? "<1%" : v.formatted(.percent.precision(.fractionLength(0)))
   }

@@ -1,4 +1,5 @@
 import AppKit
+import MeterCore
 import SwiftUI
 
 @main
@@ -62,7 +63,8 @@ struct MenuBarLabel: View {
   }
 }
 
-/// `AgentMeter --snapshot out.png [--dark]`: renders the menu with live data to a PNG and exits.
+/// `AgentMeter --snapshot out.png [--dark] [--period week] [--budget 50] [--bar]`: renders the
+/// dropdown (or, with `--bar`, the three menu bar styles) with live data to a PNG and exits.
 /// For README screenshots and for checking the layout without clicking the menu bar.
 @MainActor
 enum Snapshot {
@@ -71,11 +73,19 @@ enum Snapshot {
     guard let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count else { return }
     let out = URL(fileURLWithPath: args[i + 1])
     let dark = args.contains("--dark")
+    func value(_ flag: String) -> String? {
+      args.firstIndex(of: flag).flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil }
+    }
+    if let p = value("--period").flatMap({ Period(rawValue: $0) }) { model.period = p }
+    if let b = value("--budget").flatMap(Double.init) { model.dailyBudget = b }
+    let bar = args.contains("--bar")
     Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { timer in
       MainActor.assumeIsolated {
         guard model.loaded else { return }
         timer.invalidate()
-        let host = NSHostingView(rootView: MenuView(model: model).background(.background))
+        let host = NSHostingView(rootView: Group {
+          if bar { MenuBarStrip(model: model) } else { MenuView(model: model).background(.background) }
+        })
         host.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
         let size = host.fittingSize
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: .borderless, backing: .buffered, defer: false)
@@ -89,5 +99,33 @@ enum Snapshot {
         }
       }
     }
+  }
+}
+
+/// The three menu bar styles side by side on a menu-bar-like strip, for the README.
+private struct MenuBarStrip: View {
+  let model: MeterModel
+  var body: some View {
+    let today = model.report.totals[.today]?.cost ?? 0
+    let level = (model.gaugeLevel * 20).rounded() / 20
+    HStack(spacing: 28) {
+      ForEach(MenuBarStyle.allCases) { style in
+        VStack(spacing: 6) {
+          HStack(spacing: 4) {
+            if style != .cost { Image(nsImage: Logo.menuBarImage(level: level)) }
+            if style != .gauge { Text(Fmt.compactUSD(today)).monospacedDigit() }
+          }
+          .font(.system(size: 13, weight: .medium))
+          .fixedSize()
+          .padding(.horizontal, 8)
+          .padding(.vertical, 3)
+          .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
+          Text(style.label).font(.caption).foregroundStyle(.secondary).fixedSize()
+        }
+      }
+    }
+    .padding(.horizontal, 22)
+    .padding(.vertical, 14)
+    .background(.background)
   }
 }

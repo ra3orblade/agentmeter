@@ -43,6 +43,23 @@ private func feed(_ p: LineParser, _ s: String, state: inout FileState) -> [Turn
     #expect(turns.last?.session == "s1")
   }
 
+  @Test func claudeAcceptsSpacedJSON() {
+    var st = FileState()
+    let turns = feed(
+      ClaudeParser(),
+      #"{"type": "assistant", "cwd": "/r", "timestamp": "2026-10-01T10:00:00.123456Z", "message": {"id": "m", "model": "claude-opus-5", "usage": {"output_tokens": 3}}}"#,
+      state: &st)
+    #expect(turns.count == 1)
+    #expect(turns.first?.ts == parseDate("2026-10-01T10:00:00.123Z"))
+  }
+
+  @Test func datesWithAnyFraction() {
+    let base = parseDate("2026-10-01T10:00:00Z")!
+    #expect(parseDate("2026-10-01T10:00:00.5Z") == base.addingTimeInterval(0.5))
+    #expect(parseDate("2026-10-01T10:00:00.250000+00:00") == base.addingTimeInterval(0.25))
+    #expect(parseDate("nonsense") == nil)
+  }
+
   @Test func codexSubtractsCachedInput() {
     var st = FileState()
     let turns = feed(
