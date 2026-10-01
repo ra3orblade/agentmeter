@@ -67,7 +67,9 @@ All of these are opened read-only. Agent Meter never writes next to an agent's d
 
 ## Install
 
-You need macOS 14 or later and Swift 6. The Xcode Command Line Tools are enough (`xcode-select --install`).
+**Download:** grab `AgentMeter-<version>.zip` from [Releases](https://github.com/ra3orblade/agentmeter/releases/latest), unzip it, and move **Agent Meter** to Applications. It's a universal app (Apple silicon and Intel), signed with Developer ID and notarized by Apple, so it opens without warnings.
+
+**Build from source:** you need macOS 14 or later and Swift 6. The Xcode Command Line Tools are enough (`xcode-select --install`).
 
 ```sh
 git clone https://github.com/ra3orblade/agentmeter.git
@@ -111,9 +113,11 @@ swift build
 tools/test.sh                     # Swift Testing; works with only the Command Line Tools
 tools/bundle.sh                   # release build → dist/AgentMeter.app (ad-hoc signed)
 tools/screenshots.sh              # regenerate docs/images from synthetic logs
+tools/release.sh 0.1.0            # universal build, Developer ID signature, notarize, staple → dist/*.zip
 tools/snapshot-prices.py          # refresh the compiled-in price table from LiteLLM
 ```
 
+- Releases: add a `CHANGELOG.md` section, then push a `v*` tag. `.github/workflows/release.yml` runs `tools/release.sh` and attaches the notarized zip to a draft release.
 - `tools/screenshots.sh` renders every image in this README from `tools/demo-data.py`. That script writes 30 days of fake sessions in each agent's real log format into a throwaway home folder, so the screenshots run through the real parsers and never show anyone's actual projects.
 - `.build/debug/AgentMeter --snapshot out.png [--dark] [--period week]` renders the dropdown with your own data, which is handy when working on the layout.
 - The app icon and the menu bar glyph both come from `Sources/AgentMeter/Logo.swift`, and the bundle script generates the `.icns` from it. There's no image file to keep in sync.
