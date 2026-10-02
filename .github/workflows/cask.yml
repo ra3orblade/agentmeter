@@ -1,0 +1,32 @@
+name: Cask
+# Publishing a release (not the draft that release.yml creates) points Casks/agentmeter.rb at its
+# zip, so `brew upgrade` follows the same releases Sparkle does.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Point the cask at the release zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          v="${TAG#v}"
+          gh release download "$TAG" --pattern "AgentMeter-$v.zip" --dir "$RUNNER_TEMP"
+          sha="$(sha256sum "$RUNNER_TEMP/AgentMeter-$v.zip" | cut -d' ' -f1)"
+          sed -i -e "s/^  version \".*\"/  version \"$v\"/" -e "s/^  sha256 \".*\"/  sha256 \"$sha\"/" Casks/agentmeter.rb
+          git diff --quiet && { echo "cask already at $v"; exit 0; }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Cask: agentmeter $v"
+          git push

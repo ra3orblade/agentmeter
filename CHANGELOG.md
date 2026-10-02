@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.0] - 2026-10-02
+
+- Updates itself with Sparkle: **Check for Updates…** in the ••• menu, and optional daily checks that you turn on when it asks or with the toggle under it. 0.1.0 has no updater, so this one release has to be installed by hand.
+- Homebrew cask: `brew tap ra3orblade/agentmeter https://github.com/ra3orblade/agentmeter`, then `brew install --cask agentmeter`.
+- Built against the macOS 26 SDK. On macOS 26 the dropdown no longer shows a square panel inside its rounded window.
+
 ## [0.1.0] - 2026-10-01
 
 The first release.

@@ -6,6 +6,7 @@ import SwiftUI
 struct AgentMeterApp: App {
   @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
   @State private var model = MeterModel()
+  private let updater = Updater()
 
   init() {
     // macOS adds new status items at the far left of the status area, which on a notched
@@ -26,7 +27,7 @@ struct AgentMeterApp: App {
 
   var body: some Scene {
     MenuBarExtra {
-      MenuView(model: model)
+      MenuView(model: model, updater: updater)
     } label: {
       MenuBarLabel(model: model)
     }

@@ -25,7 +25,7 @@
 
 Agent Meter reads the logs your coding agents already write on your Mac and adds up what they would cost at API prices: today, this week and this month, by agent and by project. It's a native SwiftUI app of under 2,000 lines of Swift (plus a generated price table), and it idles at well under 1% CPU.
 
-There's no account, API key or proxy, and nothing leaves your machine. (The one exception is an optional price update that you trigger yourself; see [Prices](#prices).)
+There's no account, API key or proxy, and nothing leaves your machine. The app makes only two network requests: an optional price update that you trigger yourself (see [Prices](#prices)), and the update check (see [Updates](#updates)), which never sends your data.
 
 ## What it shows
 
@@ -67,6 +67,13 @@ All of these are opened read-only. Agent Meter never writes next to an agent's d
 
 ## Install
 
+**Homebrew:**
+
+```sh
+brew tap ra3orblade/agentmeter https://github.com/ra3orblade/agentmeter
+brew install --cask agentmeter
+```
+
 **Download:** grab `AgentMeter-<version>.zip` from [Releases](https://github.com/ra3orblade/agentmeter/releases/latest), unzip it, and move **Agent Meter** to Applications. It's a universal app (Apple silicon and Intel), signed with Developer ID and notarized by Apple, so it opens without warnings.
 
 **Build from source:** you need macOS 14 or later and Swift 6. The Xcode Command Line Tools are enough (`xcode-select --install`).
@@ -80,6 +87,10 @@ open /Applications/AgentMeter.app
 ```
 
 On first launch it indexes the last 90 days of logs, which takes a few seconds per gigabyte. Turn on **Launch at login** from the ••• menu.
+
+### Updates
+
+Agent Meter updates itself with [Sparkle](https://sparkle-project.org). On the second launch it asks whether to check automatically, about once a day. Either way, **Check for Updates…** in the ••• menu checks right away, and the toggle under it turns automatic checks on or off. The check downloads `appcast.xml` from the latest GitHub release and sends nothing else: no system profile, no identifiers. Updates install only if their EdDSA signature matches the key built into the app. Homebrew installs update the same way; `brew upgrade` also works.
 
 On a notched MacBook with a full menu bar, macOS can hide new items behind the notch. Agent Meter starts near the clock to avoid this; ⌘-drag it wherever you like.
 
@@ -97,7 +108,7 @@ The code is in two parts. `Sources/MeterCore` holds the parsers, pricing, scanne
 Prices come in three layers, and later layers win:
 
 1. **Built in.** A snapshot of [LiteLLM's public price list](https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json), taken at build time, on top of a short list of model-family prefixes. A model newer than the snapshot (say `claude-opus-5-7`) still gets its family's price.
-2. **Update prices from LiteLLM** (••• menu). Downloads the current list. This is the only network request Agent Meter makes, and only when you click it.
+2. **Update prices from LiteLLM** (••• menu). Downloads the current list, only when you click it.
 3. **Your overrides.** *Edit price overrides…* opens `pricing.json`, in USD per million tokens:
 
    ```json
@@ -117,7 +128,8 @@ tools/release.sh 0.1.0            # universal build, Developer ID signature, not
 tools/snapshot-prices.py          # refresh the compiled-in price table from LiteLLM
 ```
 
-- Releases: add a `CHANGELOG.md` section, then push a `v*` tag. `.github/workflows/release.yml` runs `tools/release.sh` and attaches the notarized zip to a draft release.
+- Releases: add a `CHANGELOG.md` section, then push a `v*` tag. `.github/workflows/release.yml` runs `tools/release.sh`, which builds on a macOS 26 SDK, notarizes, and signs the zip for Sparkle. It attaches the zip and `appcast.xml` to a draft release. Installed apps see the update once you publish the draft, and publishing also runs `.github/workflows/cask.yml`, which bumps `Casks/agentmeter.rb`.
+- The Sparkle signing key lives in the login keychain under the account `agentmeter`, and in the `SPARKLE_PRIVATE_KEY` repo secret for CI. Its public half is `SPARKLE_PUBLIC_KEY` in `tools/bundle.sh`. If the private key is lost, installed copies can't be updated any more, so keep a backup (`"$(tools/sparkle-tools.sh)/generate_keys" --account agentmeter -x backup-file`).
 - `tools/screenshots.sh` renders every image in this README from `tools/demo-data.py`. That script writes 30 days of fake sessions in each agent's real log format into a throwaway home folder, so the screenshots run through the real parsers and never show anyone's actual projects.
 - `.build/debug/AgentMeter --snapshot out.png [--dark] [--period week]` renders the dropdown with your own data, which is handy when working on the layout.
 - The app icon and the menu bar glyph both come from `Sources/AgentMeter/Logo.swift`, and the bundle script generates the `.icns` from it. There's no image file to keep in sync.

@@ -17,6 +17,7 @@ extension Agent {
 
 struct MenuView: View {
   @Bindable var model: MeterModel
+  var updater: Updater?
   @State private var hoveredDay: Date?
 
   private var r: Report { model.report }
@@ -226,6 +227,11 @@ struct MenuView: View {
         Section(pricesCaption) {
           Button("Update prices from LiteLLM") { model.updatePrices() }
           Button("Edit price overrides…") { openPricing() }
+        }
+        if let updater, updater.available {
+          Button("Check for Updates…") { updater.checkForUpdates() }
+          Toggle("Check for updates automatically", isOn: Binding(
+            get: { updater.checksAutomatically }, set: { updater.checksAutomatically = $0 }))
         }
         Button("Show cache in Finder") {
           NSWorkspace.shared.activateFileViewerSelecting([Engine.supportDir.appending(path: "meter.db")])
