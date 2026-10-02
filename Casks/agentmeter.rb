@@ -4,8 +4,8 @@
 #   brew install --cask agentmeter
 # .github/workflows/cask.yml bumps version and sha256 whenever a release is published.
 cask "agentmeter" do
-  version "0.1.0"
-  sha256 "556c2e82d574c4814ba793d5f859eaa0fd020d401dda2fd476ec320bb5c7af07"
+  version "0.2.0"
+  sha256 "5600315a62195b40ed5a4565ddcaf33e5b59c48e674122100da0ab18c401c720"
 
   url "https://github.com/ra3orblade/agentmeter/releases/download/v#{version}/AgentMeter-#{version}.zip"
   name "Agent Meter"
